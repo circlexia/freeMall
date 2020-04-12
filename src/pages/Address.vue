@@ -79,26 +79,35 @@
           <div class="addr-list-wrap">
             <div class="addr-list">
               <ul>
-                <li class="check">
+                <li
+                  :class="{'check':checkedIndex==index}"
+                  v-for="(item,index) in addressFilter"
+                  @click="checkedIndex = index"
+                  :key="item.addressId"
+                >
                   <dl>
-                    <dt>河畔一角</dt>
-                    <dd class="address">北京市昌平区</dd>
-                    <dd class="tel">17600000000</dd>
+                    <dt>{{item.userName}}</dt>
+                    <dd class="address">{{item.streetName}}</dd>
+                    <dd class="tel">{{item.tel}}</dd>
                   </dl>
                   <div class="addr-opration addr-del">
                     <!-- 删除地址 -->
-                    <a href="javascript:;" class="addr-del-btn">
+                    <a href="javascript:;" class="addr-del-btn" @click="delAddress(item.addressId)">
                       <svg class="icon icon-del">
                         <use xlink:href="#icon-del" />
                       </svg>
                     </a>
                   </div>
-                  <div class="addr-opration addr-set-default">
-                    <a href="javascript:;" class="addr-set-default-btn">
+                  <div class="addr-opration addr-set-default" v-if="!item.isDefault">
+                    <a
+                      href="javascript:;"
+                      class="addr-set-default-btn"
+                      @click="setDefault(item.addressId)"
+                    >
                       <i>设为默认</i>
                     </a>
                   </div>
-                  <div class="addr-opration addr-default">默认地址</div>
+                  <div class="addr-opration addr-default" v-if="item.isDefault">默认地址</div>
                 </li>
 
                 <li class="addr-new">
@@ -115,7 +124,12 @@
             </div>
 
             <div class="shipping-addr-more">
-              <a class="addr-more-btn up-down-btn open" href="javascript:;">
+              <a
+                class="addr-more-btn up-down-btn"
+                :class="{'open':limit>3}"
+                href="javascript:;"
+                @click="expand"
+              >
                 查看更多
                 <i class="i-up-down">
                   <i class="i-up-down-l"></i>
@@ -144,12 +158,20 @@
               </ul>
             </div>
           </div>
-          <div class="next-btn-wrap">
-            <a class="btn btn--m btn--red" href="#">下一步</a>
+          <div class="next-btn-wrap" @click="next">
+            <a class="btn btn--m btn--red" href="javascript:;">下一步</a>
           </div>
         </div>
       </div>
     </div>
+    <modal :mdShow="modalConfirm" @click="modalConfirm=false">
+      <template v-slot:message>
+        <p>你确认要删除此条数据吗?</p>
+      </template>
+      <template v-slot:btnGroup>
+        <a class="btn btn--m btn--red" href="javascript:;" @click="modalConfirm=false">关闭</a>
+      </template>
+    </modal>
     <nav-footer></nav-footer>
   </div>
 </template>
@@ -157,15 +179,69 @@
 <script>
 import NavHeader from "./../components/Header.vue";
 import NavFooter from "./../components/Footer.vue";
+import Modal from "./../components/Modal.vue";
 export default {
   name: "addr",
   data() {
-    return {};
+    return {
+      limit: 3,
+      checkedIndex: 0,
+      addressList: [],
+      modalConfirm: false
+    };
   },
   components: {
     NavHeader,
-    NavFooter
-    // Modal
+    NavFooter,
+    Modal
+  },
+  computed: {
+    addressFilter() {
+      return this.addressList.slice(0, this.limit);
+    }
+  },
+  mounted() {
+    this.init();
+  },
+  methods: {
+    init() {
+      this.axios.get("/mock/address.json").then(res => {
+        const result = res.data.data;
+        console.log(result);
+        this.addressList = result;
+        result.forEach((item, index) => {
+          if (item.isDefault) {
+            this.checkedIndex = index;
+          }
+        });
+      });
+    },
+    expand() {
+      if (this.limit == 3) {
+        this.limit = this.addressList.length;
+      } else {
+        this.limit = 3;
+      }
+    },
+    setDefault(addressId) {
+      this.addressList.map(item => {
+        if (addressId == item.addressId) {
+          item.isDefault = true;
+        } else {
+          item.isDefault = false;
+        }
+      });
+    },
+    delAddress(addressId) {
+      this.addressList.map((item, index) => {
+        if (addressId == item.addressId) {
+          this.addressList.splice(index, 1);
+        }
+      });
+    },
+    next() {
+      this.modalConfirm = true;
+    }
   }
 };
 </script>
