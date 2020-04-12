@@ -165,7 +165,6 @@ export default {
     return {
       modalConfirm: false,
       cartList: []
-      // checkAllFlag: false
     };
   },
   components: {
